@@ -19,7 +19,7 @@ client = MongoClient(
     connectTimeoutMS=10000
 )
 
-db = client['chixi_wheel_db']
+db = client['gangan_wheel_db']
 collection = db['messages']
 
 # 这一步非常重要：在启动时不强制阻塞，防止连接失败导致整个服务被 Render 杀掉
