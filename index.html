@@ -293,6 +293,8 @@
             if (confirm("是否开启这一世的背景旋律？")) toggleMusic();
             setInterval(() => loadMessages(false), 10000);
         };
+        const cors = require('cors');
+        app.use(cors()); // 简单处理：允许所有来源。或者指定域名：app.use(cors({ origin: 'https://lizhao077-netizen.github.io' }));
     </script>
 </body>
 </html>
