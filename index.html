@@ -51,17 +51,32 @@
 
     .falling-dialog {
     position: absolute;
+    z-index: 100;
     display: flex;
     justify-content: center;
     align-items: center;
     text-align: center;
-    padding: 10px; /* 缩小内边距 */
+    
+    /* --- 核心修改：自适应尺寸控制 --- */
+    padding: 15px;
+    min-width: 60px;   /* 短文字时的最小宽度 */
+    max-width: 140px;  /* 长文字时的最大宽度，防止气泡过大 */
+    min-height: 60px;
+    box-sizing: border-box;
+    
     backdrop-filter: blur(8px);
-    box-shadow: 0 4px 15px rgba(0,0,0,0.1); /* 减弱阴影使视觉更轻盈 */
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
     animation: bubbleRise 12s linear forwards;
     pointer-events: none;
-    box-sizing: border-box; /* 确保宽度计算包含 padding */
+    word-wrap: break-word;
 }
+
+/* 保持各世形状风格，但去掉固定尺寸限制 */
+.style1 .falling-dialog { border-radius: 50%; background: rgba(255, 255, 255, 0.6); }
+.style2 .falling-dialog { border-radius: 12px; background: rgba(20, 40, 20, 0.7); color: #cfc; }
+.style3 .falling-dialog { border-radius: 20px 20px 5px 20px; background: rgba(255, 230, 230, 0.75); }
+.style-hidden .falling-dialog { border-radius: 8px; background: rgba(30, 30, 40, 0.8); color: #eee; border: 1px solid #666; }
+
 
 
     @keyframes bubbleRise {
@@ -294,31 +309,23 @@
     const d = document.createElement('div');
     d.className = 'falling-dialog';
 
-    // --- 需求 2：缩小气泡尺寸 (原 120-180px -> 现 80-120px) ---
-    const size = Math.floor(Math.random() * 40) + 80; 
-    d.style.width = size + 'px'; 
-    d.style.height = size + 'px';
-
-    // --- 需求 3：解决飘到屏幕外的问题 ---
-    // 计算气泡在视口内的安全宽度百分比 (100vw - 气泡宽度)
-    // 使用 padding 留出左右各 5% 的边距，确保不贴边
-    const maxLeft = 85; // 最大左边距百分比
-    const minLeft = 5;  // 最小左边距百分比
+    // --- 核心修改：取消固定宽高，改为自适应 ---
+    // 设置随机的起始位置，预留安全边距防止飘到屏幕外
+    const minLeft = 5;  
+    const maxLeft = 80; 
     d.style.left = (Math.random() * (maxLeft - minLeft) + minLeft) + 'vw';
 
-    // --- 需求 1：删除名字，仅保留内容并设置颜色区分 ---
-    const isRightRole = (msg.user === "菲奥娜" || msg.user === "怀宁" || msg.user === "郑宝珠" || msg.user === "访客");
-    
-    // 根据角色所属阵营设定颜色
+    // --- 颜色区分逻辑 (不显示名字) ---
+    const isRightRole = (msg.user === "菲奥娜" || msg.user === "怀宁" || msg.user === "郑宝珠" || msg.user === "程走柳");
     let bubbleColor;
-    if (isHiddenPage) {
-        bubbleColor = isRightRole ? "#aaa" : "#eee"; // 隐藏页颜色
+    if (typeof isHiddenPage !== 'undefined' && isHiddenPage) {
+        bubbleColor = isRightRole ? "#aaa" : "#eee"; 
     } else {
-        bubbleColor = isRightRole ? "#ff4081" : "#007aff"; // 正常页：粉色 vs 蓝色
+        bubbleColor = isRightRole ? "#ff4081" : "#007aff"; 
     }
 
-    // 仅渲染文字内容，不再显示 msg.user
-    d.innerHTML = `<div style="font-size:12px; color:${bubbleColor}; line-height:1.4; word-break:break-all; padding:5px;">${msg.content}</div>`;
+    // 仅填充文字内容
+    d.innerHTML = `<div style="color:${bubbleColor}; line-height:1.4; word-break:break-all;">${msg.content}</div>`;
     
     container.appendChild(d);
     setTimeout(() => d.remove(), 12000);
