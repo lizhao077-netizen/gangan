@@ -309,13 +309,10 @@
     const d = document.createElement('div');
     d.className = 'falling-dialog';
 
-    // --- 核心修改：取消固定宽高，改为自适应 ---
-    // 设置随机的起始位置，预留安全边距防止飘到屏幕外
-    const minLeft = 5;  
-    const maxLeft = 80; 
-    d.style.left = (Math.random() * (maxLeft - minLeft) + minLeft) + 'vw';
+    // 随机起始位置，预留安全边距 (5vw - 80vw)
+    d.style.left = (Math.random() * 75 + 5) + 'vw';
 
-    // --- 颜色区分逻辑 (不显示名字) ---
+    // 颜色区分逻辑
     const isRightRole = (msg.user === "菲奥娜" || msg.user === "怀宁" || msg.user === "郑宝珠" || msg.user === "程走柳");
     let bubbleColor;
     if (typeof isHiddenPage !== 'undefined' && isHiddenPage) {
@@ -324,43 +321,71 @@
         bubbleColor = isRightRole ? "#ff4081" : "#007aff"; 
     }
 
-    // 仅填充文字内容
-    d.innerHTML = `<div style="color:${bubbleColor}; line-height:1.4; word-break:break-all;">${msg.content}</div>`;
+    // 渲染内容
+    d.innerHTML = `<div style="color:${bubbleColor}; line-height:1.4; word-break:break-all; font-size:13px;">${msg.content}</div>`;
     
     container.appendChild(d);
-    setTimeout(() => d.remove(), 12000);
+    
+    // 动画结束后移除
+    setTimeout(() => {
+        if(d.parentNode === container) container.removeChild(d);
+    }, 12000);
 }
 
 
-        async function loadMessages(updateUIList = false) {
-            try {
-                const res = await fetch(API_URL);
-                const allData = await res.json();
-                const currentRoles = scenes[currentScene - 1].roles;
-                const filteredData = allData.filter(m => currentRoles.includes(m.user));
-                if(updateUIList) {
-                    const listEl = document.getElementById('message-list');
-                    listEl.innerHTML = filteredData.map(m => {
-                        const isRight = (m.user === "菲奥娜" || m.user === "怀宁" || m.user === "郑宝珠" || m.user === "程走柳");
-                        return `<div class="history-item ${isRight ? 'right-style' : 'left-style'}">
-                            <div class="history-header"><img src="${m.avatar}"><span class="history-name">${m.user}</span></div>
-                            <div class="history-text">${m.content}</div>
-                        </div>`;
-                    }).join('');
-                    listEl.scrollTop = listEl.scrollHeight;
-                } else {
-                    if(document.getElementById('bubble-space').children.length < 3) {
-                        filteredData.slice(-3).forEach((m, i) => setTimeout(() => createPopMessage(m), i * 2000));
-                    }
-                }
-            } catch(e) {}
-        }
 
-        window.onload = () => {
-            renderPage(3);
-            if (confirm("是否开启这一世的背景旋律？")) toggleMusic();
-            setInterval(() => loadMessages(false), 10000);
-        };
+        // 在脚本开头定义一个全局变量存储所有留言
+let allCachedMessages = []; 
+
+async function loadMessages(updateUIList = false) {
+    try {
+        const res = await fetch(API_URL);
+        const allData = await res.json();
+        const currentRoles = scenes[currentScene - 1].roles;
+        
+        // 过滤出当前场景相关的留言
+        allCachedMessages = allData.filter(m => currentRoles.includes(m.user));
+
+        if(updateUIList) {
+            const listEl = document.getElementById('message-list');
+            listEl.innerHTML = allCachedMessages.map(m => {
+                const isRight = (m.user === "菲奥娜" || m.user === "怀宁" || m.user === "郑宝珠" || m.user === "访客");
+                return `<div class="history-item ${isRight ? 'right-style' : 'left-style'}">
+                    <div class="history-header"><img src="${m.avatar}"><span class="history-name">${m.user}</span></div>
+                    <div class="history-text">${m.content}</div>
+                </div>`;
+            }).join('');
+            listEl.scrollTop = listEl.scrollHeight;
+        }
+    } catch(e) {
+        console.error("加载留言失败", e);
+    }
+}
+
+// 新增：专门负责从缓存中随机抽取并显示气泡的函数
+function startBubbleLoop() {
+    setInterval(() => {
+        if (allCachedMessages.length > 0 && document.getElementById('bubble-space').children.length < 5) {
+            // 随机抽取索引
+            const randomIndex = Math.floor(Math.random() * allCachedMessages.length);
+            createPopMessage(allCachedMessages[randomIndex]);
+        }
+    }, 3000); // 每3秒尝试产生一个随机气泡
+}
+
+// 确保在初始化时启动循环
+window.onload = () => {
+    renderPage(3);
+    if (confirm("是否开启这一世的背景旋律？")) toggleMusic();
+    
+    // 初始加载一次
+    loadMessages(false);
+    // 启动随机气泡循环
+    startBubbleLoop();
+    // 每30秒同步一次后端新数据
+    setInterval(() => loadMessages(false), 30000);
+};
+
         const cors = require('cors');
         app.use(cors()); // 简单处理：允许所有来源。或者指定域名：app.use(cors({ origin: 'https://lizhao077-netizen.github.io' }));
     </script>
