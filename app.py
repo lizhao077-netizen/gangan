@@ -96,8 +96,10 @@ def get_gaixia_published():
 
 @app.route('/api/gaixia/admin', methods=['GET', 'PUT', 'POST'])
 def manage_gaixia_show():
+    if not os.environ.get("GAIXIA_ADMIN_PASSWORD"):
+        return _no_store((jsonify({"error": "Render 服务尚未读取到 GAIXIA_ADMIN_PASSWORD，请检查环境组关联和部署状态"}), 503))
     if not _gaixia_admin_ok():
-        return _no_store((jsonify({"error": "管理密码错误或服务端尚未配置管理密码"}), 401))
+        return _no_store((jsonify({"error": "管理密码不匹配，请输入该环境变量 VALUE 中设置的原始密码"}), 401))
     if request.content_length and request.content_length > 600000:
         return _no_store((jsonify({"error": "请求内容超过限制"}), 413))
     try:
